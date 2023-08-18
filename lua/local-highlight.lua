@@ -1,6 +1,12 @@
 -- This module highlights reference usages and the corresponding
 -- definition on cursor hold.
 
+-- TODO:
+-- * use treesitter-based semantic highlight, if available
+-- * make triggering event configurable
+-- * refactor profiling code
+-- * more neovim lua style
+
 local api = vim.api
 
 local M = {
@@ -65,7 +71,7 @@ end
 function M.highlight_usages(bufnr)
   local start_time = vim.fn.reltime()
   local cursor = api.nvim_win_get_cursor(0)
-  local line = vim.fn.getline('.')
+  local line = vim.api.nvim_get_current_line()
   if string.sub(line, cursor[2] + 1, cursor[2] + 1) == ' ' then
     M.clear_usage_highlights(bufnr)
     return
@@ -141,7 +147,7 @@ end
 
 function M.match_count(bufnr)
   if (bufnr or 0) == 0 then
-    bufnr = vim.fn.bufnr()
+    bufnr = vim.api.nvim_get_current_buf()
   end
   return M.last_count[bufnr] or 0
 end
@@ -174,7 +180,7 @@ function M.attach(bufnr)
     return
   end
   local au = api.nvim_create_augroup(M.buf_au_group_name(bufnr), { clear = true })
-  api.nvim_create_autocmd({ 'CursorHold' }, {
+  api.nvim_create_autocmd({ 'CursorMoved' }, {
     group = au,
     buffer = bufnr,
     callback = function()
@@ -205,9 +211,11 @@ function M.detach(bufnr)
 end
 
 function M.setup(config)
+
+  -- TODO: make it configurable with fg and bg
   vim.api.nvim_set_hl(0, 'LocalHighlight', {
     fg = '#dcd7ba',
-    bg = '#2d4f67',
+    bg = '#800080',
     default = true,
   })
 
@@ -238,13 +246,13 @@ function M.setup(config)
 
   --- add togglecommands
   vim.api.nvim_create_user_command('LocalHighlightOff', function()
-    M.detach(vim.fn.bufnr('%'))
+    M.detach(vim.api.nvim_get_current_buf())
   end, { desc = 'Turn local-highligh.nvim off' })
   vim.api.nvim_create_user_command('LocalHighlightOn', function()
-    M.attach(vim.fn.bufnr('%'))
+    M.attach(vim.api.nvim_get_current_buf())
   end, { desc = 'Turn local-highligh.nvim on' })
   vim.api.nvim_create_user_command('LocalHighlightToggle', function()
-    local bufnr = vim.fn.bufnr('%')
+    local bufnr = vim.api.nvim_get_current_buf()
     if M.is_attached(bufnr) then
       M.detach(bufnr)
     else

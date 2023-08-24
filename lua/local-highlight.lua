@@ -76,7 +76,12 @@ function M.highlight_usages(bufnr)
     M.clear_usage_highlights(bufnr)
     return
   end
-  local curword, curword_start, curword_end = unpack(vim.fn.matchstrpos(line, [[\k*\%]] .. cursor[2] + 1 .. [[c\k*]]))
+  local ok, match_info = pcall(vim.fn.matchstrpos, line, [[\k*\%]] .. cursor[2] + 1 .. [[c\k*]])
+  if not ok then
+    -- vim.print(match_info)
+    return
+  end
+  local curword, curword_start, curword_end = unpack(match_info)
   if not curword or #curword == 0 then
     M.clear_usage_highlights(bufnr)
     return
